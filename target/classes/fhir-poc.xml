@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="a6003a7c-8c6a-4538-bec4-c2d0c495630a" >
+		<salesforce:basic-connection username="arthi.jaikumar-0dvf@force.com" password="Archuezhil@97" securityToken="21w3zNuiPQBINh4L7Oml6B0RB" />
+	</salesforce:sfdc-config>
+	<flow name="fhir-pocFlow" doc:id="c233a2cf-27a0-4dd1-8b84-423341da1be0" >
+		<salesforce:query doc:name="Query" doc:id="4dfc7f72-ae80-4fdc-8d08-5741d518b23c" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[select Patient_id__c,Name,BillingCity,BillingState,BillingPostalCode,Phone From Account]]></salesforce:salesforce-query>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="00217fa1-be65-4662-88f6-459093a26ea3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="fhir-pocFlow1" doc:id="ad7596cb-ade0-417f-aff9-b044daef34bc" >
+		<ee:transform doc:name="Transform Message" doc:id="45b31bf7-44be-48e5-9d49-3502944c7c30" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[{
+Patient_id__c : payload.id,
+Name: payload.name[0].use,
+BillingCity:payload.address[0].city,
+BillingState:payload.address[0].state,
+BillingPostalCode:payload.address[0].postalCode,
+Phone:payload.telecom[0].value 
+
+}]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:upsert objectType="Account" externalIdFieldName="Id" doc:name="Upsert" doc:id="bf34e902-1e6a-4804-8ff5-13e1cdfd31e2" config-ref="Salesforce_Config"/>
+		<ee:transform doc:name="Transform Message" doc:id="2e6fbe43-e798-4796-bbe1-10552d2e606a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="1fb82244-afdc-4812-9461-888b200acc53" message="Success"/>
+	</flow>
+</mule>
